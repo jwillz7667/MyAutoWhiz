@@ -1,0 +1,517 @@
+// Prisma Schema for MyAutoWhiz
+// Documentation: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================================================
+// USER & AUTHENTICATION
+// ============================================================================
+
+model User {
+  id                     String             @id @default(uuid())
+  email                  String             @unique
+  emailVerified          Boolean            @default(false)
+  emailVerificationToken String?
+  emailVerificationExpires DateTime?
+  passwordHash           String?
+  fullName               String?
+  avatarUrl              String?
+  phone                  String?
+
+  // Subscription
+  subscriptionTier       SubscriptionTier   @default(FREE)
+  subscriptionStatus     SubscriptionStatus @default(ACTIVE)
+  stripeCustomerId       String?            @unique
+  stripeSubscriptionId   String?
+  subscriptionEndsAt     DateTime?
+  trialEndsAt            DateTime?
+
+  // Usage tracking (reset monthly/daily)
+  monthlyVinLookups      Int                @default(0)
+  dailyChatMessages      Int                @default(0)
+  monthlyImageAnalyses   Int                @default(0)
+  lastUsageReset         DateTime           @default(now())
+  lastDailyReset         DateTime           @default(now())
+
+  // OAuth connections
+  oauthProvider          String?
+  oauthProviderId        String?
+
+  // Preferences
+  preferences            Json               @default("{}")
+
+  // Password reset
+  passwordResetToken     String?
+  passwordResetExpires   DateTime?
+
+  // Soft delete
+  deletedAt              DateTime?
+
+  // Timestamps
+  createdAt              DateTime           @default(now())
+  updatedAt              DateTime           @updatedAt
+
+  // Relations
+  vehicles               Vehicle[]
+  chatSessions           ChatSession[]
+  diagnosticSessions     DiagnosticSession[]
+  vinLookups             VinLookup[]
+  maintenanceRecords     MaintenanceRecord[]
+  refreshTokens          RefreshToken[]
+  familyOwned            FamilyMember[]     @relation("FamilyOwner")
+  memberOf               FamilyMember?      @relation("FamilyMember")
+  shopContacts           ShopContact[]
+
+  @@index([email])
+  @@index([stripeCustomerId])
+  @@index([oauthProvider, oauthProviderId])
+  @@map("users")
+}
+
+enum SubscriptionTier {
+  FREE
+  PRO
+  FAMILY
+  DEALER
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  PAST_DUE
+  CANCELED
+  TRIALING
+}
+
+model RefreshToken {
+  id         String   @id @default(uuid())
+  token      String   @unique
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  deviceInfo String?
+  ipAddress  String?
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+
+  @@index([token])
+  @@index([userId])
+  @@index([expiresAt])
+  @@map("refresh_tokens")
+}
+
+model FamilyMember {
+  id         String    @id @default(uuid())
+  ownerId    String
+  owner      User      @relation("FamilyOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  memberId   String    @unique
+  member     User      @relation("FamilyMember", fields: [memberId], references: [id], onDelete: Cascade)
+  role       String    @default("member")
+  inviteEmail String?
+  inviteToken String?
+  invitedAt  DateTime  @default(now())
+  acceptedAt DateTime?
+
+  @@index([ownerId])
+  @@map("family_members")
+}
+
+// ============================================================================
+// VEHICLES
+// ============================================================================
+
+model Vehicle {
+  id              String    @id @default(uuid())
+  userId          String
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Core vehicle info
+  vin             String
+  nickname        String?
+
+  // Decoded VIN data
+  year            Int?
+  make            String?
+  model           String?
+  trim            String?
+  engine          String?
+  transmission    String?
+  drivetrain      String?
+  fuelType        String?
+  bodyType        String?
+  exteriorColor   String?
+  interiorColor   String?
+
+  // User-entered data
+  currentMileage  Int?
+  purchaseDate    DateTime?
+  purchasePrice   Decimal?  @db.Decimal(10, 2)
+  licensePlate    String?
+
+  // Cached API data
+  decodedData     Json?
+  safetyRatings   Json?
+  recallData      Json?
+  lastRecallCheck DateTime?
+
+  // Status
+  isPrimary       Boolean   @default(false)
+  isActive        Boolean   @default(true)
+
+  // Timestamps
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  // Relations
+  chatSessions       ChatSession[]
+  diagnosticSessions DiagnosticSession[]
+  maintenanceRecords MaintenanceRecord[]
+
+  @@unique([userId, vin])
+  @@index([userId])
+  @@index([vin])
+  @@map("vehicles")
+}
+
+// ============================================================================
+// AI CHAT
+// ============================================================================
+
+model ChatSession {
+  id            String          @id @default(uuid())
+  userId        String
+  user          User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  vehicleId     String?
+  vehicle       Vehicle?        @relation(fields: [vehicleId], references: [id], onDelete: SetNull)
+
+  // Session metadata
+  sessionType   ChatSessionType
+  title         String?
+  status        ChatStatus      @default(ACTIVE)
+
+  // Context for AI
+  systemContext Json?
+
+  // Timestamps
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+
+  // Relations
+  messages      ChatMessage[]
+
+  @@index([userId])
+  @@index([vehicleId])
+  @@index([status])
+  @@index([createdAt])
+  @@map("chat_sessions")
+}
+
+enum ChatSessionType {
+  GENERAL
+  DIAGNOSTIC
+  REPAIR_GUIDE
+  PURCHASE_ADVICE
+  MAINTENANCE
+}
+
+enum ChatStatus {
+  ACTIVE
+  RESOLVED
+  ARCHIVED
+}
+
+model ChatMessage {
+  id               String      @id @default(uuid())
+  sessionId        String
+  session          ChatSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  // Message content
+  role             MessageRole
+  content          String      @db.Text
+
+  // Attachments
+  attachments      Json        @default("[]")
+
+  // Function calling
+  functionCalls    Json?
+
+  // Token usage
+  promptTokens     Int?
+  completionTokens Int?
+
+  // Timestamps
+  createdAt        DateTime    @default(now())
+
+  @@index([sessionId])
+  @@index([createdAt])
+  @@map("chat_messages")
+}
+
+enum MessageRole {
+  USER
+  ASSISTANT
+  SYSTEM
+  FUNCTION
+}
+
+// ============================================================================
+// DIAGNOSTICS
+// ============================================================================
+
+model DiagnosticSession {
+  id               String           @id @default(uuid())
+  userId           String
+  user             User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  vehicleId        String?
+  vehicle          Vehicle?         @relation(fields: [vehicleId], references: [id], onDelete: SetNull)
+
+  // User-reported issues
+  symptoms         String[]
+  obdCodes         String[]
+
+  // Uploaded images
+  images           Json             @default("[]")
+
+  // AI analysis
+  aiAnalysis       Json?
+
+  // Recommendations
+  suggestedRepairs Json?
+  estimatedCosts   Json?
+
+  // Status
+  urgencyLevel     String?
+  status           DiagnosticStatus @default(OPEN)
+  resolvedAt       DateTime?
+  resolution       String?
+
+  // Timestamps
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+
+  @@index([userId])
+  @@index([vehicleId])
+  @@index([status])
+  @@map("diagnostic_sessions")
+}
+
+enum DiagnosticStatus {
+  OPEN
+  IN_PROGRESS
+  RESOLVED
+  CLOSED
+}
+
+// ============================================================================
+// VIN LOOKUPS
+// ============================================================================
+
+model VinLookup {
+  id          String    @id @default(uuid())
+  userId      String?
+  user        User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  // VIN and lookup type
+  vin         String
+  lookupType  String
+
+  // Results
+  decodedData Json?
+  safetyData  Json?
+  recallData  Json?
+  marketValue Json?
+
+  // Source tracking
+  source      String?
+
+  // Caching
+  cachedUntil DateTime?
+
+  // Timestamps
+  createdAt   DateTime  @default(now())
+
+  @@index([userId])
+  @@index([vin])
+  @@index([cachedUntil])
+  @@map("vin_lookups")
+}
+
+// ============================================================================
+// REPAIR SHOPS
+// ============================================================================
+
+model RepairShop {
+  id                String    @id @default(uuid())
+  googlePlaceId     String    @unique
+
+  // Basic info
+  name              String
+  address           String?
+  city              String?
+  state             String?
+  zipCode           String?
+  country           String    @default("US")
+
+  // Location
+  latitude          Decimal   @db.Decimal(10, 8)
+  longitude         Decimal   @db.Decimal(11, 8)
+
+  // Contact
+  phone             String?
+  website           String?
+
+  // Ratings
+  googleRating      Decimal?  @db.Decimal(2, 1)
+  googleReviewCount Int?
+  priceLevel        Int?
+
+  // Hours
+  businessHours     Json?
+
+  // Specializations
+  specialties       String[]
+  certifications    String[]
+
+  // Partnership
+  isVerified        Boolean   @default(false)
+  isPartner         Boolean   @default(false)
+  partnerCommission Decimal?  @db.Decimal(5, 2)
+
+  // Caching
+  lastUpdated       DateTime  @default(now())
+  cachedUntil       DateTime?
+
+  // Timestamps
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  // Relations
+  maintenanceRecords MaintenanceRecord[]
+  shopContacts       ShopContact[]
+
+  @@index([googlePlaceId])
+  @@index([latitude, longitude])
+  @@map("repair_shops")
+}
+
+model ShopContact {
+  id           String     @id @default(uuid())
+  shopId       String
+  shop         RepairShop @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  userId       String
+  user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Contact details
+  name         String
+  email        String
+  phone        String?
+  message      String     @db.Text
+
+  // Related data
+  vehicleInfo  String?
+  diagnosticId String?
+
+  // Tracking
+  status       String     @default("pending")
+
+  // Timestamps
+  createdAt    DateTime   @default(now())
+
+  @@index([shopId])
+  @@index([userId])
+  @@map("shop_contacts")
+}
+
+// ============================================================================
+// MAINTENANCE RECORDS
+// ============================================================================
+
+model MaintenanceRecord {
+  id          String      @id @default(uuid())
+  vehicleId   String
+  vehicle     Vehicle     @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+  userId      String
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Service details
+  serviceType String
+  description String?     @db.Text
+
+  // When/where
+  serviceDate DateTime
+  mileage     Int?
+  shopId      String?
+  shop        RepairShop? @relation(fields: [shopId], references: [id])
+  shopName    String?
+
+  // Cost
+  cost        Decimal?    @db.Decimal(10, 2)
+  partsUsed   Json        @default("[]")
+
+  // Documentation
+  receiptUrl  String?
+  notes       String?     @db.Text
+
+  // Timestamps
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  @@index([vehicleId])
+  @@index([userId])
+  @@index([serviceDate])
+  @@map("maintenance_records")
+}
+
+// ============================================================================
+// SUBSCRIPTIONS & BILLING
+// ============================================================================
+
+model SubscriptionEvent {
+  id            String   @id @default(uuid())
+  userId        String
+
+  // Stripe data
+  stripeEventId String   @unique
+  eventType     String
+  eventData     Json
+
+  // Processing
+  processedAt   DateTime @default(now())
+
+  @@index([userId])
+  @@index([stripeEventId])
+  @@index([eventType])
+  @@map("subscription_events")
+}
+
+// ============================================================================
+// ANALYTICS & LOGGING
+// ============================================================================
+
+model ApiLog {
+  id           String   @id @default(uuid())
+  userId       String?
+
+  // Request details
+  method       String
+  path         String
+  statusCode   Int
+  responseTime Int
+
+  // Context
+  userAgent    String?
+  ipAddress    String?
+
+  // Timestamps
+  createdAt    DateTime @default(now())
+
+  @@index([userId])
+  @@index([createdAt])
+  @@index([path])
+  @@map("api_logs")
+}

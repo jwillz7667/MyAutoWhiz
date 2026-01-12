@@ -1,0 +1,54 @@
+{
+  "name": "myautowhiz",
+  "version": "1.0.0",
+  "private": true,
+  "description": "AI-Powered Vehicle Intelligence Platform",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/jwillz7667/MyAutoWhiz.git"
+  },
+  "scripts": {
+    "dev": "turbo dev",
+    "build": "turbo build",
+    "start": "turbo start",
+    "lint": "turbo lint",
+    "lint:fix": "turbo lint:fix",
+    "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\"",
+    "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,json,md}\"",
+    "typecheck": "turbo typecheck",
+    "test": "turbo test",
+    "test:api": "pnpm --filter api test",
+    "test:web": "pnpm --filter web test",
+    "db:migrate": "pnpm --filter api db:migrate",
+    "db:migrate:dev": "pnpm --filter api db:migrate:dev",
+    "db:generate": "pnpm --filter api db:generate",
+    "db:push": "pnpm --filter api db:push",
+    "db:seed": "pnpm --filter api db:seed",
+    "db:studio": "pnpm --filter api db:studio",
+    "db:reset": "pnpm --filter api db:reset",
+    "clean": "turbo clean && rm -rf node_modules",
+    "prepare": "husky"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "husky": "^9.0.0",
+    "lint-staged": "^15.2.0",
+    "prettier": "^3.2.0",
+    "turbo": "^2.0.0",
+    "typescript": "^5.3.0"
+  },
+  "packageManager": "pnpm@9.0.0",
+  "engines": {
+    "node": ">=20.0.0",
+    "pnpm": ">=9.0.0"
+  },
+  "lint-staged": {
+    "*.{ts,tsx,js,jsx}": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "*.{json,md}": [
+      "prettier --write"
+    ]
+  }
+}

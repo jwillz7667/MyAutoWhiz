@@ -1,0 +1,9 @@
+export * as authController from './auth.controller';
+export * as userController from './user.controller';
+export * as vehicleController from './vehicle.controller';
+export * as chatController from './chat.controller';
+export * as diagnosticController from './diagnostic.controller';
+export * as shopController from './shop.controller';
+export * as subscriptionController from './subscription.controller';
+export * as vinController from './vin.controller';
+export * as healthController from './health.controller';
