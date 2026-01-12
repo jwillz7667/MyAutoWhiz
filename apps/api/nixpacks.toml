@@ -6,7 +6,7 @@
 nixPkgs = ["nodejs_20", "pnpm"]
 
 [phases.install]
-cmds = ["pnpm install --frozen-lockfile"]
+cmds = ["pnpm install"]
 
 [phases.build]
 cmds = ["pnpm build --filter=@myautowhiz/api", "cd apps/api && pnpm prisma generate"]
