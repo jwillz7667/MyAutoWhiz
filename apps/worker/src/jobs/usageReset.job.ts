@@ -61,7 +61,7 @@ async function processUsageResetJob(job: Job<UsageResetJobData>): Promise<{ rese
       if (!data.dryRun) {
         // Batch update users
         await Promise.all(
-          users.map(async (user) => {
+          users.map(async (user: { id: string }) => {
             await prisma.user.update({
               where: { id: user.id },
               data: {

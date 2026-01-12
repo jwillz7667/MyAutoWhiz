@@ -1,5 +1,4 @@
 import { Job, Worker } from 'bullmq';
-import { Prisma } from '@prisma/client';
 
 import { QUEUE_NAMES, emailQueue } from '../queues';
 import { createRedisConnection } from '../lib/redis';
@@ -7,7 +6,19 @@ import prisma from '../lib/prisma';
 import logger from '../lib/logger';
 
 // Type for vehicle with user included
-type VehicleWithUser = Prisma.VehicleGetPayload<{ include: { user: true } }>;
+interface VehicleWithUser {
+  id: string;
+  make: string | null;
+  model: string | null;
+  year: number | null;
+  recallData: unknown;
+  user: {
+    id: string;
+    email: string;
+    fullName: string | null;
+    preferences: unknown;
+  };
+}
 
 // NHTSA Recalls API
 const NHTSA_RECALLS_URL = 'https://api.nhtsa.gov/recalls/recallsByVehicle';

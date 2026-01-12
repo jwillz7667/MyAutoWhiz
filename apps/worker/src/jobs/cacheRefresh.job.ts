@@ -48,7 +48,7 @@ async function processRefreshCacheJob(job: Job<CacheRefreshJobData>): Promise<{ 
       await redis.setex(
         CACHE_KEYS.POPULAR_MAKES,
         CACHE_TTLS.POPULAR_MAKES,
-        JSON.stringify(popularMakes.map((m) => ({ make: m.make, count: m._count.make })))
+        JSON.stringify(popularMakes.map((m: { make: string | null; _count: { make: number } }) => ({ make: m.make, count: m._count.make })))
       );
 
       refreshed.push('popular_makes');
@@ -71,7 +71,7 @@ async function processRefreshCacheJob(job: Job<CacheRefreshJobData>): Promise<{ 
       await redis.setex(
         CACHE_KEYS.POPULAR_MODELS,
         CACHE_TTLS.POPULAR_MODELS,
-        JSON.stringify(popularModels.map((m) => ({ make: m.make, model: m.model, count: m._count.model })))
+        JSON.stringify(popularModels.map((m: { make: string | null; model: string | null; _count: { model: number } }) => ({ make: m.make, model: m.model, count: m._count.model })))
       );
 
       refreshed.push('popular_models');
@@ -98,7 +98,7 @@ async function processRefreshCacheJob(job: Job<CacheRefreshJobData>): Promise<{ 
       });
 
       const stats = {
-        byTier: subscriptionStats.reduce((acc, s) => {
+        byTier: subscriptionStats.reduce((acc: Record<string, number>, s: { subscriptionTier: string; _count: { subscriptionTier: number } }) => {
           acc[s.subscriptionTier] = s._count.subscriptionTier;
           return acc;
         }, {} as Record<string, number>),

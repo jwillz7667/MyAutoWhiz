@@ -1,10 +1,12 @@
 import { Job, Worker } from 'bullmq';
-import { SubscriptionTier } from '@prisma/client';
 
 import { QUEUE_NAMES } from '../queues';
 import { createRedisConnection } from '../lib/redis';
 import prisma from '../lib/prisma';
 import logger from '../lib/logger';
+
+// Define subscription tier type locally to avoid Prisma client generation issues
+type SubscriptionTier = 'FREE' | 'PRO' | 'FAMILY' | 'DEALER';
 
 // Data retention periods (in days) per subscription tier
 const RETENTION_PERIODS: Record<SubscriptionTier, number> = {
