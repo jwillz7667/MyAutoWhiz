@@ -1,0 +1,15 @@
+# Nixpacks configuration for Worker service
+# Railway should set "Root Directory" to repo root in dashboard,
+# then use this config with NIXPACKS_CONFIG_FILE=apps/worker/nixpacks.toml
+
+[phases.setup]
+nixPkgs = ["nodejs_20", "pnpm"]
+
+[phases.install]
+cmds = ["pnpm install --frozen-lockfile"]
+
+[phases.build]
+cmds = ["pnpm build --filter=@myautowhiz/worker"]
+
+[start]
+cmd = "node apps/worker/dist/index.js"

@@ -57,9 +57,11 @@
 1. Go to [railway.app](https://railway.app)
 2. Click **"New Project"** → **"Deploy from GitHub repo"**
 3. Select `jwillz7667/MyAutoWhiz`
-4. Configure the service:
-   - **Root Directory**: `apps/api`
-   - Railway will auto-detect the `railway.toml`
+4. **IMPORTANT - Monorepo Setup:**
+   - **Root Directory**: Leave **EMPTY** (use repo root, not `apps/api`)
+   - Go to **Settings** → **Build**
+   - Set **Config File Path**: `apps/api/railway.toml`
+   - This allows Railway to access the full monorepo for pnpm workspaces
 
 5. Add Environment Variables (Settings → Variables):
 
@@ -93,8 +95,10 @@ npx prisma migrate deploy
 
 1. In your Railway project, click **"New Service"** → **"GitHub Repo"**
 2. Select the same repo `jwillz7667/MyAutoWhiz`
-3. Configure:
-   - **Root Directory**: `apps/worker`
+3. **IMPORTANT - Monorepo Setup:**
+   - **Root Directory**: Leave **EMPTY** (use repo root)
+   - Go to **Settings** → **Build**
+   - Set **Config File Path**: `apps/worker/railway.toml`
 
 4. Add Environment Variables:
 

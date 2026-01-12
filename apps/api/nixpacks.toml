@@ -1,0 +1,15 @@
+# Nixpacks configuration for API service
+# Railway should set "Root Directory" to repo root in dashboard,
+# then use this config with NIXPACKS_CONFIG_FILE=apps/api/nixpacks.toml
+
+[phases.setup]
+nixPkgs = ["nodejs_20", "pnpm"]
+
+[phases.install]
+cmds = ["pnpm install --frozen-lockfile"]
+
+[phases.build]
+cmds = ["pnpm build --filter=@myautowhiz/api", "cd apps/api && pnpm prisma generate"]
+
+[start]
+cmd = "node apps/api/dist/index.js"

@@ -1,14 +1,11 @@
 [build]
 builder = "nixpacks"
-buildCommand = "cd ../.. && pnpm install && pnpm build --filter=@myautowhiz/worker"
+nixpacksConfigPath = "apps/worker/nixpacks.toml"
 
 [deploy]
-startCommand = "node dist/index.js"
+startCommand = "node apps/worker/dist/index.js"
 restartPolicyType = "on_failure"
 restartPolicyMaxRetries = 5
-
-# Worker doesn't expose HTTP, but Railway needs something
-# The worker runs as a background process
 
 # Environment variables to set in Railway dashboard:
 # DATABASE_URL - PostgreSQL connection string (same as API)
