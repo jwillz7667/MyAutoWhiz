@@ -1,4 +1,8 @@
 # Nixpacks configuration for Railway deployments
+# Note: Each service should set its own start command in Railway dashboard
+# API: node apps/api/dist/index.js
+# Worker: node apps/worker/dist/index.js
+
 [phases.setup]
 nixPkgs = ["nodejs_20", "pnpm"]
 
@@ -8,5 +12,7 @@ cmds = ["pnpm install"]
 [phases.build]
 cmds = ["cd apps/api && pnpm prisma generate", "pnpm build"]
 
+# Default start command - override in Railway dashboard per service
+# Or use START_COMMAND env var
 [start]
-cmd = "node dist/index.js"
+cmd = "node ${START_COMMAND:-apps/api/dist/index.js}"
