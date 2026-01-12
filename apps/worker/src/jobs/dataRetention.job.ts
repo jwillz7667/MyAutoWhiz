@@ -51,7 +51,7 @@ async function processDataRetentionJob(job: Job<DataRetentionJobData>): Promise<
     });
 
     if (user) {
-      const retentionDays = RETENTION_PERIODS[user.subscriptionTier];
+      const retentionDays = RETENTION_PERIODS[user.subscriptionTier as SubscriptionTier];
       const cutoffDate = new Date();
       cutoffDate.setDate(cutoffDate.getDate() - retentionDays);
 
