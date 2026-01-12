@@ -2,7 +2,16 @@ import { Resend } from 'resend';
 
 import { logger } from '../utils/logger';
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+// Lazy initialization to avoid crash on startup if RESEND_API_KEY is not set
+let resend: Resend | null = null;
+
+function getResendClient(): Resend | null {
+  if (!resend && process.env.RESEND_API_KEY) {
+    resend = new Resend(process.env.RESEND_API_KEY);
+  }
+  return resend;
+}
+
 const FROM_EMAIL = process.env.EMAIL_FROM || 'MyAutoWhiz <noreply@myautowhiz.com>';
 const WEB_URL = process.env.WEB_URL || 'http://localhost:3000';
 
@@ -14,8 +23,14 @@ class EmailService {
   ): Promise<void> {
     const verifyUrl = `${WEB_URL}/verify-email?token=${token}`;
 
+    const client = getResendClient();
+    if (!client) {
+      logger.warn('Email service not configured (RESEND_API_KEY missing)', { email });
+      return;
+    }
+
     try {
-      await resend.emails.send({
+      await client.emails.send({
         from: FROM_EMAIL,
         to: email,
         subject: 'Verify your MyAutoWhiz account',
@@ -70,8 +85,14 @@ class EmailService {
   ): Promise<void> {
     const resetUrl = `${WEB_URL}/reset-password?token=${token}`;
 
+    const client = getResendClient();
+    if (!client) {
+      logger.warn('Email service not configured (RESEND_API_KEY missing)', { email });
+      return;
+    }
+
     try {
-      await resend.emails.send({
+      await client.emails.send({
         from: FROM_EMAIL,
         to: email,
         subject: 'Reset your MyAutoWhiz password',
@@ -121,8 +142,14 @@ class EmailService {
   }
 
   async sendPasswordChangedEmail(email: string, name?: string): Promise<void> {
+    const client = getResendClient();
+    if (!client) {
+      logger.warn('Email service not configured (RESEND_API_KEY missing)', { email });
+      return;
+    }
+
     try {
-      await resend.emails.send({
+      await client.emails.send({
         from: FROM_EMAIL,
         to: email,
         subject: 'Your MyAutoWhiz password was changed',
@@ -164,8 +191,14 @@ class EmailService {
   }
 
   async sendWelcomeEmail(email: string, name?: string): Promise<void> {
+    const client = getResendClient();
+    if (!client) {
+      logger.warn('Email service not configured (RESEND_API_KEY missing)', { email });
+      return;
+    }
+
     try {
-      await resend.emails.send({
+      await client.emails.send({
         from: FROM_EMAIL,
         to: email,
         subject: 'Welcome to MyAutoWhiz!',
@@ -221,8 +254,14 @@ class EmailService {
     recallCount: number,
     name?: string
   ): Promise<void> {
+    const client = getResendClient();
+    if (!client) {
+      logger.warn('Email service not configured (RESEND_API_KEY missing)', { email });
+      return;
+    }
+
     try {
-      await resend.emails.send({
+      await client.emails.send({
         from: FROM_EMAIL,
         to: email,
         subject: `Safety Recall Alert: ${vehicleInfo}`,
