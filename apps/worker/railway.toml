@@ -1,0 +1,17 @@
+[build]
+builder = "nixpacks"
+buildCommand = "cd ../.. && pnpm install && pnpm build --filter=@myautowhiz/worker"
+
+[deploy]
+startCommand = "node dist/index.js"
+restartPolicyType = "on_failure"
+restartPolicyMaxRetries = 5
+
+# Worker doesn't expose HTTP, but Railway needs something
+# The worker runs as a background process
+
+# Environment variables to set in Railway dashboard:
+# DATABASE_URL - PostgreSQL connection string (same as API)
+# REDIS_URL - Redis connection string (same as API)
+# RESEND_API_KEY - Resend email API key
+# NODE_ENV - production

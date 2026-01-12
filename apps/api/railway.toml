@@ -1,0 +1,26 @@
+[build]
+builder = "nixpacks"
+buildCommand = "cd ../.. && pnpm install && pnpm build --filter=@myautowhiz/api && cd apps/api && pnpm prisma generate"
+
+[deploy]
+startCommand = "node dist/index.js"
+healthcheckPath = "/api/v1/health"
+healthcheckTimeout = 30
+restartPolicyType = "on_failure"
+restartPolicyMaxRetries = 3
+
+[service]
+internalPort = 3001
+
+# Environment variables to set in Railway dashboard:
+# DATABASE_URL - PostgreSQL connection string
+# REDIS_URL - Redis connection string
+# JWT_SECRET - Secret for JWT tokens (generate with: openssl rand -base64 32)
+# JWT_REFRESH_SECRET - Secret for refresh tokens
+# OPENAI_API_KEY - OpenAI API key
+# GOOGLE_PLACES_API_KEY - Google Places API key
+# STRIPE_SECRET_KEY - Stripe secret key
+# STRIPE_WEBHOOK_SECRET - Stripe webhook signing secret
+# RESEND_API_KEY - Resend email API key
+# FRONTEND_URL - Vercel deployment URL
+# NODE_ENV - production
