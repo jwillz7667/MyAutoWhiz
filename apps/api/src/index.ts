@@ -13,21 +13,23 @@ async function startServer(): Promise<void> {
   try {
     logger.info('Starting MyAutoWhiz API server...');
 
-    // Verify database connection
+    // Check database connection (non-blocking - server starts anyway)
     logger.info('Checking database connection...');
     const dbConnected = await checkDatabaseConnection();
-    if (!dbConnected) {
-      throw new Error('Failed to connect to database');
+    if (dbConnected) {
+      logger.info('Database connected successfully');
+    } else {
+      logger.warn('Database connection failed - server will start but may not be fully ready');
     }
-    logger.info('Database connected successfully');
 
-    // Verify Redis connection
+    // Check Redis connection (non-blocking - server starts anyway)
     logger.info('Checking Redis connection...');
     const redisConnected = await checkRedisConnection();
-    if (!redisConnected) {
-      throw new Error('Failed to connect to Redis');
+    if (redisConnected) {
+      logger.info('Redis connected successfully');
+    } else {
+      logger.warn('Redis connection failed - server will start but may not be fully ready');
     }
-    logger.info('Redis connected successfully');
 
     // Create Express app
     const app = createApp();
