@@ -5,162 +5,135 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Project Overview
 
 MyAutoWhiz is an AI-powered vehicle intelligence platform with three core features:
-1. **Used Vehicle Research** - VIN decoding, recalls, safety ratings
-2. **Diagnostic & Repair Assistance** - AI chat with GPT-5.2 vision for photo analysis
+1. **Used Vehicle Research** - VIN decoding, recalls, safety ratings via NHTSA API
+2. **Diagnostic & Repair Assistance** - AI chat with OpenAI vision for photo analysis
 3. **Repair Shop Discovery** - Google Places integration for finding shops
-
-The platform consists of:
-- **Web App**: Next.js 15 with App Router (apps/web)
-- **API Server**: Express + TypeScript (apps/api)
-- **Background Worker**: BullMQ job processor (apps/worker)
-- **iOS App**: Swift/SwiftUI (apps/ios)
-- **Shared Package**: TypeScript types and Zod schemas (packages/shared)
-
-## Tech Stack
-
-| Layer | Technology |
-|-------|------------|
-| Frontend | Next.js 15, React 19, TailwindCSS 4, shadcn/ui, Zustand, TanStack Query |
-| Backend | Node.js 20, Express, TypeScript 5.3+, Prisma 5.10+ |
-| Database | PostgreSQL 16 with PostGIS |
-| Cache | Redis 7 |
-| AI | OpenAI GPT-5.2 with function calling |
-| External APIs | NHTSA (VIN/recalls/safety), Google Places, Stripe |
-| Infrastructure | Railway, Cloudflare |
-
-## Common Commands
-
-```bash
-# Install dependencies (from root)
-pnpm install
-
-# Start all services in development
-pnpm dev
-
-# Database operations
-pnpm db:migrate        # Run migrations
-pnpm db:generate       # Generate Prisma client
-pnpm db:seed           # Seed database
-pnpm db:studio         # Open Prisma Studio
-
-# Run tests
-pnpm test              # Run all tests
-pnpm test:api          # API tests only
-pnpm test:web          # Web tests only
-
-# Single test file
-pnpm --filter api test -- <test-file-path>
-
-# Linting and formatting
-pnpm lint              # Run ESLint
-pnpm format            # Run Prettier
-
-# Build
-pnpm build             # Build all packages
-pnpm --filter web build  # Build web only
-pnpm --filter api build  # Build API only
-
-# Type checking
-pnpm typecheck
-```
 
 ## Monorepo Structure
 
-```
-MyAutoWhiz/
-├── apps/
-│   ├── web/           # Next.js 15 (port 3000)
-│   │   └── app/       # App Router pages
-│   ├── api/           # Express API (port 4000)
-│   │   ├── src/
-│   │   │   ├── controllers/
-│   │   │   ├── middleware/
-│   │   │   ├── services/
-│   │   │   ├── routes/
-│   │   │   └── utils/
-│   │   └── prisma/schema.prisma
-│   ├── worker/        # BullMQ background jobs
-│   └── ios/           # Swift/SwiftUI app
-├── packages/
-│   └── shared/        # Shared types, constants, Zod schemas
-└── scripts/           # Development scripts
+This is a pnpm + Turborepo monorepo:
+- `apps/web` - Next.js 15 frontend (port 3000)
+- `apps/api` - Express API server (port 4000)
+- `apps/worker` - BullMQ background job processor
+- `apps/ios` - Swift/SwiftUI mobile app
+- `packages/shared` - Shared types, constants, and Zod validation schemas
+
+## Commands
+
+```bash
+# Development
+pnpm install              # Install all dependencies
+pnpm dev                  # Start all services (web, api, worker)
+docker compose up -d      # Start PostgreSQL and Redis
+
+# Database (Prisma schema at apps/api/prisma/schema.prisma)
+pnpm db:migrate           # Run migrations (production)
+pnpm db:migrate:dev       # Run migrations (development, creates migration files)
+pnpm db:generate          # Regenerate Prisma client after schema changes
+pnpm db:seed              # Seed database
+pnpm db:studio            # Open Prisma Studio GUI
+pnpm db:reset             # Reset database (destructive)
+
+# Testing
+pnpm test                             # All tests
+pnpm test:api                         # API tests only (Vitest)
+pnpm --filter api test -- src/path    # Single test file
+
+# Quality
+pnpm lint                 # ESLint all packages
+pnpm typecheck            # TypeScript check all packages
+pnpm format               # Prettier format all files
+
+# Build
+pnpm build                # Build all packages
+pnpm --filter api build   # Build specific package
 ```
 
-## Architecture Patterns
+## Architecture
 
-### API Routes
-- All endpoints prefixed with `/api/v1/`
-- Standard response format: `{ success: boolean, data?: T, error?: { code, message, details } }`
-- Use Zod schemas from `packages/shared` for request validation
-- Controllers call services; services contain business logic
+### API Layer (apps/api)
+- **Routes** (`src/routes/`) - Express routers, all prefixed with `/api/v1/`
+- **Controllers** (`src/controllers/`) - Request handlers using `catchAsync` wrapper
+- **Services** (`src/services/`) - Business logic, external API calls
+- **Middleware** (`src/middleware/`) - Auth, validation, rate limiting, error handling
+
+Standard response helpers in `src/utils/response.ts`:
+```typescript
+sendSuccess(res, data)           // 200 with { success: true, data }
+sendCreated(res, data)           // 201
+sendPaginated(res, items, total, page, pageSize)
+sendError(res, statusCode, code, message, details?)
+```
+
+### Request Validation
+Use Zod schemas from `@myautowhiz/shared`:
+```typescript
+import { decodeVinSchema } from '@myautowhiz/shared';
+const { vin } = decodeVinSchema.parse(req.body);
+```
+
+Middleware helpers: `validateBody()`, `validateQuery()`, `validateParams()`, `validateRequest()`
+
+### Background Jobs (apps/worker)
+BullMQ queues defined in `src/queues/index.ts`:
+- `email` - Email sending via Resend
+- `recall-check` - Periodic recall checks for saved vehicles
+- `usage-reset` - Monthly/daily usage counter resets
+- `data-retention` - Cleanup of old logs/sessions
+- `cache-refresh` - Refresh stale cached data
+
+### Web Frontend (apps/web)
+- Next.js 15 App Router (`src/app/`)
+- Route groups: `(auth)` for login/register, `(dashboard)` for authenticated pages
+- State: Zustand stores in `src/stores/`, TanStack Query for server state
+- UI: shadcn/ui components in `src/components/ui/`
+
+### Shared Package (packages/shared)
+Import as `@myautowhiz/shared`:
+- `src/types/` - TypeScript interfaces (User, Vehicle, Chat, etc.)
+- `src/validation/` - Zod schemas for API request/response validation
+- `src/constants/` - Subscription tiers, rate limits, error codes
+
+## Key Patterns
 
 ### Authentication
-- JWT access tokens (15 min) + refresh tokens (30 days)
-- Refresh tokens stored in database, access tokens in memory/Keychain
-- Middleware validates JWT and attaches user to request
+- JWT access tokens (15 min) + refresh tokens (30 days in database)
+- `requireAuth` middleware validates JWT and attaches `req.user`
+- Refresh tokens stored in `RefreshToken` model
 
 ### Subscription Tiers
-- FREE, PRO ($9.99), FAMILY ($19.99), DEALER ($99.99)
-- Each tier has usage limits (VIN lookups, chat messages, image analyses)
-- Rate limiting enforced via Redis
-
-### Caching Strategy
-- VIN decode results: 24 hours in Redis
-- Shop search results: 1 hour
-- Session data: Redis
+Enum values: `FREE`, `PRO`, `FAMILY`, `DEALER`
+Usage limits defined in `packages/shared/src/constants/limits.ts`
 
 ### OpenAI Integration
-- Uses Responses API with function calling
-- Functions: `decode_vin`, `lookup_recalls`, `estimate_repair_cost`, `find_nearby_shops`
-- Supports vision for image analysis of vehicle issues
+`apps/api/src/services/openai.service.ts` implements:
+- Streaming chat with function calling (`streamChat`)
+- Available functions: `decode_vin`, `lookup_recalls`, `get_safety_ratings`, `estimate_repair_cost`, `find_nearby_shops`, `get_maintenance_schedule`
+- Image analysis for vehicle diagnostics (`analyzeImage`)
 
-## Database Schema Key Models
-
-- **User**: Subscription tier, usage counters, OAuth connections
-- **Vehicle**: VIN, decoded data, cached recalls/safety ratings
-- **ChatSession/ChatMessage**: AI conversation history with function call logs
-- **DiagnosticSession**: Symptoms, OBD codes, images, AI analysis
-- **RepairShop**: Cached Google Places data with geo coordinates
+### External APIs
+- **NHTSA** (`nhtsa.service.ts`) - VIN decoding, recalls, safety ratings
+- **Google Places** (`shop.service.ts`) - Repair shop search
+- **Stripe** (`subscription.service.ts`) - Payments and subscriptions
+- **Resend** (`email.service.ts`) - Transactional emails
 
 ## Environment Variables
 
-Required for local development:
+Required:
 ```
 DATABASE_URL=postgresql://postgres:postgres@localhost:5432/myautowhiz
 REDIS_URL=redis://localhost:6379
-JWT_SECRET=<generate-secure-key>
-JWT_REFRESH_SECRET=<generate-secure-key>
-OPENAI_API_KEY=<your-key>
-GOOGLE_PLACES_API_KEY=<your-key>
-STRIPE_SECRET_KEY=<your-key>
-STRIPE_WEBHOOK_SECRET=<your-key>
-RESEND_API_KEY=<your-key>
+JWT_SECRET=<secure-key>
+JWT_REFRESH_SECRET=<secure-key>
+OPENAI_API_KEY=<key>
+GOOGLE_PLACES_API_KEY=<key>
+STRIPE_SECRET_KEY=<key>
+STRIPE_WEBHOOK_SECRET=<key>
+RESEND_API_KEY=<key>
 ```
 
-## Local Development Setup
+## Deployment
 
-1. Start local services:
-```bash
-docker compose up -d  # PostgreSQL and Redis
-```
-
-2. Set up database:
-```bash
-pnpm db:migrate
-pnpm db:seed
-```
-
-3. Start development:
-```bash
-pnpm dev
-```
-
-## Key Implementation Notes
-
-- Always validate user input on both client and server
-- Use TypeScript strict mode; avoid `any` types
-- Handle loading and error states in all UI components
-- Log errors with context for debugging (use structured JSON logging)
-- Paginate all list queries (avoid unbounded queries)
-- Use Prisma includes/joins to avoid N+1 queries
-- Cache aggressively but invalidate appropriately
+Railway deployment configured in `railway.json`:
+- Health check endpoint: `/api/v1/health`
+- Nixpacks builder with auto-detection

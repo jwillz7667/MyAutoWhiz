@@ -6,6 +6,7 @@ import type {
   ShopContact,
   ShopContactRequest,
 } from '@myautowhiz/shared';
+import type { Prisma } from '@prisma/client';
 
 import { prisma } from '../lib/prisma';
 import { getCache, setCache } from '../lib/redis';
@@ -346,7 +347,7 @@ class ShopService {
     googleRating?: number | null;
     googleReviewCount?: number | null;
     priceLevel?: number | null;
-    businessHours?: unknown;
+    businessHours?: Prisma.InputJsonValue;
     specialties: string[];
     cachedUntil: Date;
   } | null> {
@@ -379,7 +380,7 @@ class ShopService {
         googleRating: place.rating,
         googleReviewCount: place.userRatingCount,
         priceLevel: parsePriceLevel(place.priceLevel),
-        businessHours: place.regularOpeningHours,
+        businessHours: place.regularOpeningHours as Prisma.InputJsonValue | undefined,
         specialties: this.parseSpecialties(place.types || []),
         cachedUntil: new Date(Date.now() + CACHE_TTL * 1000),
       };
