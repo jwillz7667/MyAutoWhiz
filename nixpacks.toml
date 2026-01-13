@@ -4,13 +4,13 @@
 # Worker: node apps/worker/dist/index.js
 
 [phases.setup]
-nixPkgs = ["nodejs_20", "pnpm"]
+nixPkgs = ["nodejs_20", "pnpm", "openssl"]
 
 [phases.install]
 cmds = ["pnpm install"]
 
 [phases.build]
-cmds = ["cd apps/api && pnpm exec prisma generate", "pnpm build"]
+cmds = ["chmod +x node_modules/.bin/* || true", "cd apps/api && pnpm prisma generate", "pnpm build"]
 
 # Default start command - override in Railway dashboard per service
 # Or use START_COMMAND env var

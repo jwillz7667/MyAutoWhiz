@@ -3,13 +3,13 @@
 # then use this config with NIXPACKS_CONFIG_FILE=apps/worker/nixpacks.toml
 
 [phases.setup]
-nixPkgs = ["nodejs_20", "pnpm"]
+nixPkgs = ["nodejs_20", "pnpm", "openssl"]
 
 [phases.install]
 cmds = ["pnpm install"]
 
 [phases.build]
-cmds = ["cd apps/api && pnpm exec prisma generate", "pnpm build --filter=@myautowhiz/worker"]
+cmds = ["chmod +x node_modules/.bin/* || true", "cd apps/api && pnpm prisma generate", "pnpm build --filter=@myautowhiz/worker"]
 
 [start]
 cmd = "node apps/worker/dist/index.js"
