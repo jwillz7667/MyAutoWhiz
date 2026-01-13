@@ -9,7 +9,7 @@ nixPkgs = ["nodejs_20", "pnpm", "openssl"]
 cmds = ["pnpm install"]
 
 [phases.build]
-cmds = ["cd apps/api && npx --yes prisma@5.22.0 generate", "pnpm build --filter=@myautowhiz/api"]
+cmds = ["cd apps/api && npx --yes prisma@5.22.0 generate", "pnpm --filter @myautowhiz/shared run build", "pnpm --filter @myautowhiz/api run build"]
 
 [start]
 cmd = "node apps/api/dist/index.js"
