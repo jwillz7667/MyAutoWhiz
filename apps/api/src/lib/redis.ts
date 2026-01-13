@@ -4,6 +4,9 @@ import { logger } from '../utils/logger';
 
 const REDIS_URL = process.env.REDIS_URL || 'redis://localhost:6379';
 
+// Parse URL to check if TLS is needed (rediss://)
+const isTLS = REDIS_URL.startsWith('rediss://');
+
 export const redis = new Redis(REDIS_URL, {
   maxRetriesPerRequest: 3,
   retryStrategy(times) {
@@ -17,6 +20,12 @@ export const redis = new Redis(REDIS_URL, {
     }
     return false;
   },
+  // TLS options for Upstash and other cloud Redis providers
+  ...(isTLS && {
+    tls: {
+      rejectUnauthorized: false,
+    },
+  }),
 });
 
 redis.on('connect', () => {
