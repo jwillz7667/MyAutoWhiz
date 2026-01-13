@@ -33,7 +33,7 @@ importers:
         specifier: workspace:*
         version: link:../../packages/shared
       '@prisma/client':
-        specifier: ^5.10.0
+        specifier: ^5.22.0
         version: 5.22.0(prisma@5.22.0)
       bcryptjs:
         specifier: ^2.4.3
@@ -151,7 +151,7 @@ importers:
         specifier: ^9.0.7
         version: 9.0.8
       prisma:
-        specifier: ^5.10.0
+        specifier: ^5.22.0
         version: 5.22.0
       supertest:
         specifier: ^6.3.4
