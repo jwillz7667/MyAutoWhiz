@@ -177,7 +177,7 @@ class VinService {
       take: limit,
     });
 
-    return lookups.map((l) => ({
+    return lookups.map((l: (typeof lookups)[number]) => ({
       id: l.id,
       userId: l.userId,
       vin: l.vin,

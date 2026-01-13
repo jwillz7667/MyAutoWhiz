@@ -312,8 +312,8 @@ Respond in JSON format with: summary, possibleCauses, diagnosticSteps, urgency, 
         resolvedAt: new Date(),
         resolution,
         estimatedCosts: actualCost
-          ? ({ actual: actualCost } as Prisma.JsonObject)
-          : (diagnostic.estimatedCosts as Prisma.JsonObject | null) ?? undefined,
+          ? JSON.parse(JSON.stringify({ actual: actualCost }))
+          : diagnostic.estimatedCosts ?? undefined,
       },
       include: {
         vehicle: {

@@ -164,7 +164,7 @@ class SubscriptionService {
     }
 
     // Prevent downgrade via checkout
-    const tierOrder = { FREE: 0, PRO: 1, FAMILY: 2, DEALER: 3 };
+    const tierOrder: Record<string, number> = { FREE: 0, PRO: 1, FAMILY: 2, DEALER: 3 };
     if (tierOrder[tier] <= tierOrder[user.subscriptionTier]) {
       throw ValidationError('Cannot downgrade subscription via checkout. Use customer portal.');
     }

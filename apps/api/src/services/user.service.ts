@@ -69,7 +69,7 @@ class UserService {
         fullName: input.fullName,
         phone: input.phone,
         avatarUrl: input.avatarUrl,
-        preferences: preferences as Prisma.JsonObject,
+        preferences: JSON.parse(JSON.stringify(preferences)),
       },
       include: {
         _count: {
@@ -119,7 +119,7 @@ class UserService {
       throw UserNotFoundError();
     }
 
-    const features = SubscriptionFeatures[user.subscriptionTier];
+    const features = SubscriptionFeatures[user.subscriptionTier as keyof typeof SubscriptionFeatures];
     const now = new Date();
 
     // Calculate reset dates

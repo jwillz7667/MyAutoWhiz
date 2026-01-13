@@ -30,7 +30,7 @@ class VehicleService {
       select: { subscriptionTier: true },
     });
 
-    const limit = UsageLimits.vehiclesInGarage[user?.subscriptionTier || 'FREE'];
+    const limit = UsageLimits.vehiclesInGarage[(user?.subscriptionTier || 'FREE') as keyof typeof UsageLimits.vehiclesInGarage];
 
     const vehicles = await prisma.vehicle.findMany({
       where: {
@@ -40,7 +40,7 @@ class VehicleService {
       orderBy: [{ isPrimary: 'desc' }, { createdAt: 'desc' }],
     });
 
-    const summaries: VehicleSummary[] = vehicles.map((v) => ({
+    const summaries: VehicleSummary[] = vehicles.map((v: (typeof vehicles)[number]) => ({
       id: v.id,
       vin: v.vin,
       nickname: v.nickname,
@@ -88,7 +88,7 @@ class VehicleService {
       select: { subscriptionTier: true },
     });
 
-    const limit = UsageLimits.vehiclesInGarage[user?.subscriptionTier || 'FREE'];
+    const limit = UsageLimits.vehiclesInGarage[(user?.subscriptionTier || 'FREE') as keyof typeof UsageLimits.vehiclesInGarage];
 
     if (limit !== -1) {
       const currentCount = await prisma.vehicle.count({
@@ -312,7 +312,7 @@ class VehicleService {
       },
     });
 
-    return records.map((r) => ({
+    return records.map((r: (typeof records)[number]) => ({
       id: r.id,
       vehicleId: r.vehicleId,
       userId: r.userId,

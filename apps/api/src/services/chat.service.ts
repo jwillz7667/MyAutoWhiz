@@ -59,7 +59,7 @@ class ChatService {
     ]);
 
     return {
-      sessions: sessions.map((s) => ({
+      sessions: sessions.map((s: (typeof sessions)[number]) => ({
         id: s.id,
         title: s.title,
         sessionType: s.sessionType,
@@ -104,7 +104,7 @@ class ChatService {
       createdAt: session.createdAt,
       updatedAt: session.updatedAt,
       vehicle: session.vehicle,
-      messages: session.messages.map((m) => ({
+      messages: session.messages.map((m: (typeof session.messages)[number]) => ({
         id: m.id,
         sessionId: m.sessionId,
         role: m.role,
@@ -253,7 +253,7 @@ class ChatService {
     // Build conversation history
     const messages = session.messages
       .reverse()
-      .map((m) => ({
+      .map((m: (typeof session.messages)[number]) => ({
         role: m.role.toLowerCase() as 'user' | 'assistant' | 'system',
         content: m.content,
         attachments: (m.attachments as unknown) as MessageAttachment[],
@@ -307,7 +307,7 @@ class ChatService {
           sessionId,
           role: MessageRole.ASSISTANT,
           content: assistantContent,
-          functionCalls: functionCalls.length > 0 ? (functionCalls as Prisma.JsonArray) : undefined,
+          functionCalls: functionCalls.length > 0 ? JSON.parse(JSON.stringify(functionCalls)) : undefined,
         },
       });
 
@@ -356,7 +356,7 @@ class ChatService {
       take: options.limit || 50,
     });
 
-    return messages.map((m) => ({
+    return messages.map((m: (typeof messages)[number]) => ({
       id: m.id,
       sessionId: m.sessionId,
       role: m.role,
