@@ -323,7 +323,7 @@ class ShopService {
               lastUpdated: new Date(),
             },
           })
-          .catch((err) => {
+          .catch((err: Error) => {
             logger.debug('Shop upsert skipped', { placeId: shop.googlePlaceId, error: err.message });
           });
       }
@@ -335,10 +335,21 @@ class ShopService {
     }
   }
 
-  private async fetchPlaceDetails(placeId: string): Promise<Omit<
-    Parameters<typeof prisma.repairShop.create>[0]['data'],
-    'id'
-  > | null> {
+  private async fetchPlaceDetails(placeId: string): Promise<{
+    googlePlaceId: string;
+    name: string;
+    address?: string | null;
+    latitude: number;
+    longitude: number;
+    phone?: string | null;
+    website?: string | null;
+    googleRating?: number | null;
+    googleReviewCount?: number | null;
+    priceLevel?: number | null;
+    businessHours?: unknown;
+    specialties: string[];
+    cachedUntil: Date;
+  } | null> {
     if (!GOOGLE_PLACES_API_KEY) {
       return null;
     }
