@@ -10,7 +10,7 @@ nixPkgs = ["nodejs_20", "pnpm"]
 cmds = ["pnpm install"]
 
 [phases.build]
-cmds = ["cd apps/api && pnpm prisma generate", "pnpm build"]
+cmds = ["cd apps/api && pnpm exec prisma generate", "pnpm build"]
 
 # Default start command - override in Railway dashboard per service
 # Or use START_COMMAND env var
