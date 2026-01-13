@@ -15,4 +15,4 @@ cmds = ["cd apps/api && pnpm prisma generate", "pnpm build"]
 # Default start command - override in Railway dashboard per service
 # Or use START_COMMAND env var
 [start]
-cmd = "node ${START_COMMAND:-apps/api/dist/index.js}"
+cmd = "sh -c 'node ${START_COMMAND:-apps/api/dist/index.js}'"
