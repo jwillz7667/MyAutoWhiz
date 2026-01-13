@@ -27,7 +27,7 @@
     "db:studio": "pnpm --filter api db:studio",
     "db:reset": "pnpm --filter api db:reset",
     "clean": "turbo clean && rm -rf node_modules",
-    "prepare": "husky"
+    "prepare": "husky || true"
   },
   "devDependencies": {
     "@types/node": "^20.11.0",
